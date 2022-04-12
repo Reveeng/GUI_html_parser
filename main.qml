@@ -20,7 +20,7 @@ Window {
         onClicked: {
             if (textEdit.text.length != 0){
                 if (parser.parse_html(textEdit.text)){
-                    parser.get_tags_stats_recursive()
+                    parser.get_tags_stats()
                     console.log("parsing poshel")
 //                    console.log(data)
 //                    tableView.model = data
@@ -37,7 +37,7 @@ Window {
 
     Connections{
         target:parser
-        onFinished:{
+        function onFinished() {
             console.log("parse finished")
             var data = Object.entries(parser.get_stat())
             tableView.model = data
