@@ -29,23 +29,50 @@ class ParseRunnable(QObject):
     finished = pyqtSignal('QVariant')
 #    Конструктор класса, сразу при создании экземпляра передаю метод запроса http или https
 #    url основной страницы и ссылки которые нужно спарсить
-    def __init__(self,method, url, links):
-        super().__init__()
-        self.origin_url = url
-        self.links = links
-        self.method = method
+    def __init__(self,url, parent = None):
+        super().__init__(parent)
+        respContainer = Utilities.get_response(url)
+        self.isValid = not respContainer == None
+        if (respContainer != None):
+            split_url = url.split('/')
+            for token in split_url:
+                if '.' in token:
+                    self.origin_url = token
+                    break
+            self.method = split_url[0]
+
+            self.all_tags = [tag.name for tag in respContainer.soup.find_all()]
+            self.links = Utilities.get_valid_links([link.get('href') for link in  respContainer.soup.find_all('a')],self.origin_url)
+            self.images = {}
+            self.images[self.origin_url] = Utilities.get_valid_links([tag.get('src') for tag in respContainer.soup.find_all('img')], self.origin_url)
+
+
 #    Сюда дописываю тэги найденные на основной странице
     def set_tags(self,tags):
         self.all_tags = tags
+
+#    Добавляем новые ссылки в конец массива, если ссылки нет в этом списке
+    def search_for_new_links(self,new_links):
+        for link in new_links:
+            if link  not in self.links:
+                print(link)
+                self.links.append(link)
+
 #    Эта функция выполняется в отдельном потоке, ищет все тэги ро всем ссылкам
     def run(self):
         for link in self.links:
             respContainer = Utilities.get_response(self.method+"//"+self.origin_url+link)
             if respContainer!= None:
                 new_tags = [tag.name for tag in respContainer.soup.find_all()]
+                links = Utilities.get_valid_links([link.get('href') for link in  respContainer.soup.find_all('a')], self.origin_url)
+                self.search_for_new_links(links)
                 self.all_tags = [*self.all_tags, *new_tags]
+                imgs = Utilities.get_valid_links([tag.get('src') for tag in respContainer.soup.find_all('img')],self.origin_url)
+                if (len(imgs) > 0):
+                    self.images[link] = imgs
 #        вызываю сигнал, чтобы из вспомогательного потока передать данные в основной.
         self.finished.emit(self.all_tags)
+        print(self.images)
 
 
 class Parser(QObject):
@@ -58,22 +85,8 @@ class Parser(QObject):
 #    Если у функции нет декоратора, то она не видна в qml файле
     @pyqtSlot(str, result = 'QVariant')
     def parse_html(self, url):
-#        Получаю контейнер ответа, см файл Utilities
-        respContainer = Utilities.get_response(url)
-#        Проверяю получил ли ответ. Если ответ получен выполняем функцию, если нет, то ничего не делаем
-        if (respContainer  != None):
-            self.last_repsonse = respContainer.response
-            self.soup = respContainer.soup
-#            Получаю основной адрес сайта и метод
-            split_url = url.split('/')
-            for token in split_url:
-                if '.' in token:
-                    self.origin_url = token
-                    break
-            self.method = split_url[0]
-            return True
-        else:
-            return False
+        self.runnable = ParseRunnable(url)
+        return self.runnable.isValid
 
 #    Выполняется когда закончит выполнение поток в котором парсится сайт
     def on_parse_finished(self, all_tags):
@@ -90,14 +103,6 @@ class Parser(QObject):
 #    Функция вызывается из qml, чтобы запустить парсинг сайта
     @pyqtSlot()
     def get_tags_stats(self):
-#        Получаю ссылки и тэги с основной страницы
-        links = [link.get('href') for link in  self.soup.find_all('a')]
-        all_tags = [tag.name for tag in self.soup.find_all()]
-        origin_links = Utilities.get_valid_links(links, self.origin_url)
-#        создаю класс который будет парсить вторичные ссылки
-        self.runnable = ParseRunnable(self.method,self.origin_url,origin_links)
-#        выставляю уже найденные тэги
-        self.runnable.set_tags(all_tags)
 #        Создаю экземпляр класса потока
         self.thread  = QThread()
 #        Переношу объект в поток (По сути никакого переноса нет, просто все методы класса будут выполняться в этом потоке)

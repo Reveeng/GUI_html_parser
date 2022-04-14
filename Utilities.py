@@ -9,6 +9,26 @@ from bs4 import BeautifulSoup
 header = {'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36'}
 
+all_tags = ["!--...--","!DOCTYPE","a","abbr","acronym", "address",
+            "applet","area","article","aside","audio","b",
+            "base","basefont","bdi","bdo","big","blockquote",
+            "body","br","button","canvas","caption","center",
+            "cite","code","col","colgroup","data","datalist",
+            "dd","del","details","dfn","dialog","dir","div",
+            "dl","dt","em","embed","fieldset","figcaption",
+            "figure","font","footer","form","frame","frameset",
+            "h1","h2","h3","h4","h5","h6","head","header","hr",
+            "html","i","iframe","img","input","ins","kbd",
+            "label","legend","li","link","main","map","mark",
+            "meta","meter","nav","noframes","noscript","object",
+            "ol","optgroup","option","output","p","param","picture",
+            "pre","progress","q","rp","rt","ruby","s","samp","script",
+            "section","select","small","source","span","strike",
+            "strong","style","sub","summary","sup","svg","table",
+            "tbody","td","template","textarea","tfoot","th","thead"
+            "time","title","tr","track","tt","u","ul","var","video","wbr"]
+
+
 #Класс контейнера, содержит все, что мне нужно, после получения ответа от сервера на котором расположен сайт
 #То есть текстовый ответ response и soup версию разметки
 class ResponceContainer():
@@ -41,6 +61,7 @@ def get_valid_links(links, support_url):
                 clear_links.append(link)
             elif link.startswith(support_url):
                 clear_links.append(link)
+    clear_links = get_unique_array(clear_links)
     return clear_links
 
 #Отправляет запрос на сервер. Если произошла ошибка возвращает None, если все нормально, то возвращает контейнер
@@ -57,7 +78,11 @@ def get_response(url):
 #Принимет на вход массив тегов которые вообще есть на сайте. Возвращает словарь вида Tag - count
 def get_tags_count(tags):
     unique_tags = get_unique_array(tags)
-    tag_dict = {}
+    valid_tags = []
     for tag in unique_tags:
+        if tag in all_tags:
+            valid_tags.append(tag)
+    tag_dict = {}
+    for tag in valid_tags:
         tag_dict[tag] = tags.count(tag)
     return tag_dict

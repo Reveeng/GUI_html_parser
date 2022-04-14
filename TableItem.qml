@@ -6,8 +6,8 @@ Item {
     property alias value : valueText.text
     width: (headText.width > 40) || (valueText.width > 40) ?
                 headText.width > valueText.width ?
-                   headText.width+10 :
-                   valueText.width+10
+                   headText.width+20 :
+                   valueText.width+20
                 : 40
     Rectangle{
         id:headerBack
