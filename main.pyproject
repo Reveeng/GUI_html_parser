@@ -1,3 +1,3 @@
 {
-    "files": ["TableItem.qml","main.qml","main.py","parser_module.py","Utilities.py"]
+    "files": ["main.qml","TableItem.qml","Utilities.py","main.py","parser_module.py","main_graph.py"]
 }

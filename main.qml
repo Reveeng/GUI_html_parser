@@ -29,6 +29,32 @@ Window {
             }
         }
     }
+    Button{
+        id:drawGraph
+        anchors.verticalCenter: button.verticalCenter
+        anchors.left:button.right
+        anchors.leftMargin: 10
+        width:150
+        height:20
+        text: "Показать граф"
+        enabled: false
+        onClicked: {
+            parser.show_graph()
+        }
+    }
+    Button{
+        id:downlImgs
+        anchors.verticalCenter: button.verticalCenter
+        anchors.left:drawGraph.right
+        anchors.leftMargin: 10
+        width:150
+        height:20
+        text: "скачать изображения"
+        enabled: false
+        onClicked: {
+            parser.download_images()
+        }
+    }
 
 //    Соединям сигнал finished от парсера с функцией которая написана.
     Connections{
@@ -38,6 +64,8 @@ Window {
             var data = Object.entries(parser.get_stat())
 //            Задаем tableView модель data
             tableView.model = data
+            drawGraph.enabled = true
+            downlImgs.enabled = true
         }
     }
 

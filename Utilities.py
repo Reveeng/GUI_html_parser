@@ -4,6 +4,14 @@ from multiprocessing.dummy import Pool
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
+import networkx as nx
+import matplotlib
+
+matplotlib.use('WebAgg')
+
+import matplotlib.pyplot as plt
+
+from PyQt5 import QtWidgets
 
 #Заголовок для запросов
 header = {'User-Agent':
@@ -86,3 +94,61 @@ def get_tags_count(tags):
     for tag in valid_tags:
         tag_dict[tag] = tags.count(tag)
     return tag_dict
+
+
+def unquote(links, edges):
+    from urllib.parse import unquote as unq
+    links = [unq(link) for link in links]
+    edges = [[unq(edge[0]),unq(edge[1])] for edge in edges]
+    return links, edges
+
+#nodes - ноды графы, edges - массив типа [node,node] устанавливает ребро между нодами
+def draw_graph(nodes,edges):
+#    создаю объъект графа
+
+    G = nx.Graph()
+    G.add_nodes_from(nodes)
+    G.add_edges_from(edges)
+
+
+    import plotly.graph_objects as go
+    pos = nx.spring_layout(G)
+    nodes_x = []
+    nodes_y = []
+
+    for node in G.nodes():
+        G.nodes[node]['pos']= pos[node]
+
+    for node in G.nodes():
+        x, y = G.nodes[node]['pos']
+        nodes_x.append(x)
+        nodes_y.append(y)
+
+    node_trace = go.Scatter(x = nodes_x, y = nodes_y, text = list(G.nodes()), mode = 'markers',
+                        marker = go.scatter.Marker(
+                        showscale = False,
+                        colorscale = 'ylgnbu',
+                        reversescale = False,
+                        color = "black",
+                        size = 5,
+                        line = dict(width = 2)))
+
+
+    edge_trace = go.Scatter(x = [], y = [], text = [],
+                         line = go.scatter.Line(width = 1, color = '#888'),
+                         mode = 'lines')
+
+
+    for edge in G.edges():
+        x0, y0 = G.nodes[edge[0]]['pos']
+        x1, y1 = G.nodes[edge[1]]['pos']
+        edge_trace['x'] += (x0, x1, None)
+        edge_trace['y'] += (y0, y1, None)
+
+    fig = go.Figure(data=[edge_trace, node_trace],
+                 layout=go.Layout(
+                    showlegend = False,
+                    xaxis=dict(showgrid = False, zeroline = False, showticklabels = False),
+                    yaxis=dict(showgrid = False, zeroline = False, showticklabels = False))
+                    )
+    fig.show()
