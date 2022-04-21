@@ -7,6 +7,7 @@ from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
 #Импорт класса парсера
 from parser_module import Parser
+import Utilities
 
 if __name__ == "__main__":
 #    создается экземпляр класса приложения

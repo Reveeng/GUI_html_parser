@@ -85,13 +85,13 @@ def get_response(url):
 
 #Принимет на вход массив тегов которые вообще есть на сайте. Возвращает словарь вида Tag - count
 def get_tags_count(tags):
-    unique_tags = get_unique_array(tags)
-    valid_tags = []
-    for tag in unique_tags:
-        if tag in all_tags:
-            valid_tags.append(tag)
+#    unique_tags = get_unique_array(tags)
+#    valid_tags = []
+#    for tag in unique_tags:
+#        if tag in all_tags:
+#            valid_tags.append(tag)
     tag_dict = {}
-    for tag in valid_tags:
+    for tag in all_tags:
         tag_dict[tag] = tags.count(tag)
     return tag_dict
 

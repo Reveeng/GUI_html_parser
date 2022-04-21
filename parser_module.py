@@ -38,7 +38,8 @@ class DrawRunnable(QObject):
         self.finished.emit()
 
 class DownloadRunnable(QObject):
-    finished = pyqtSignal()
+    finished = pyqtSignal('QVariant')
+    progressChanged = pyqtSignal('QVariant')
 
     def __init__(self, imgs, url, method, parent = None):
         super().__init__(parent)
@@ -52,16 +53,23 @@ class DownloadRunnable(QObject):
             os.mkdir(self.path)
 
     def run(self):
+        img_numb = 0
+        img_progr = 0
+        names = []
         for link in self.images:
+            img_numb += 1
+            img_progr = (img_numb)/len(self.images)
+            self.progressChanged.emit(img_progr)
             name = os.path.join(self.path,link.split('/')[-1])
             try:
                 with open(name, 'wb') as image:
                     response = requests.get(self.method+"//"+self.support_url+link,stream = True)
                     if response.ok:
                         image.write(response.content)
+                        names.append(name)
             except:
                 print("error with "+name)
-        self.finished.emit()
+        self.finished.emit(names)
 
 
 
@@ -69,6 +77,7 @@ class DownloadRunnable(QObject):
 class ParseRunnable(QObject):
 #    сигнал сгенерится, когда все операции будут выполнены
     finished = pyqtSignal('QVariant')
+    progressChanged = pyqtSignal('QVariant')
 #    Конструктор класса, сразу при создании экземпляра передаю метод запроса http или https
 #    url основной страницы и ссылки которые нужно спарсить
     def __init__(self,url, parent = None):
@@ -103,6 +112,8 @@ class ParseRunnable(QObject):
 
 #    Эта функция выполняется в отдельном потоке, ищет все тэги ро всем ссылкам
     def run(self):
+        link_numb = 0
+        old_link_progr = 0
         for link in self.links:
             url = self.method+"//"+self.origin_url+link
             respContainer = Utilities.get_response(url)
@@ -116,8 +127,14 @@ class ParseRunnable(QObject):
                 imgs = Utilities.get_valid_links([tag.get('src') for tag in respContainer.soup.find_all('img')],self.origin_url)
                 if (len(imgs) > 0):
                     self.search_for_new_imgs(imgs)
+
+                link_numb += 1
+                tmp_prgr = (link_numb)/len(self.links)
+                if (tmp_prgr > old_link_progr):
+                    old_link_progr = tmp_prgr
+                    self.progressChanged.emit(old_link_progr)
+
         self.links, self.edges = Utilities.unquote(self.links, self.edges)
-        print(self.images)
 #        вызываю сигнал, чтобы из вспомогательного потока передать данные в основной.
 
         self.finished.emit(self.all_tags)
@@ -127,6 +144,9 @@ class ParseRunnable(QObject):
 
 class Parser(QObject):
     finished = pyqtSignal()
+    parseProgressChanged = pyqtSignal('QVariant')
+    downloadProgressChanged = pyqtSignal('QVariant')
+    imageDownloaded = pyqtSignal('QVariant')
 
     def __init__(self, parent = None):
         return super().__init__(parent)
@@ -144,17 +164,25 @@ class Parser(QObject):
     def on_parse_finished(self, all_tags):
 #        записываю словарь тегов
         self.tag_dict = Utilities.get_tags_count(all_tags)
-#        print(self.runnable.nodes)
+        print(self.tag_dict)
+
         self.links = self.runnable.links
         self.edges = self.runnable.edges
         self.images = self.runnable.images
+        self.download_images()
 #        Генерирую сигнал, который потом перехвачу в qml
         self.finished.emit()
 
 #    Функция которую вызываю в qml для получения словаря. Tag - count
     @pyqtSlot(result = 'QVariant')
     def get_stat(self):
-        return self.tag_dict
+        sub_len = int(len(self.tag_dict)/3)
+        tags_1 = dict(list(self.tag_dict.items())[:sub_len-1])
+        tags_2 = dict(list(self.tag_dict.items())[sub_len:2*sub_len-1])
+        tags_3 = dict(list(self.tag_dict.items())[2*sub_len:3*sub_len-1])
+        tags = [tags_1,tags_2, tags_3]
+#        split_tags = [,self.tag_dict[sub_len:2*sub_len-1],self.tag_dict[2*sub_len:3*sub_len-1]]
+        return tags
 
     @pyqtSlot()
     def show_graph(self):
@@ -180,6 +208,7 @@ class Parser(QObject):
 #        Здесь я по сути говорю, что когда запустится поток, выполни метод run у класса runnable
 #        Когда runnable закончит выполнение останови поток и удали объект потока, затем передай данные в основной класс и удали объект runnable
         self.runnable.finished.connect(self.on_parse_finished)
+        self.runnable.progressChanged.connect(self.parseProgressChanged)
         self.thread.started.connect(self.runnable.run)
         self.runnable.finished.connect(self.thread.quit)
         self.runnable.finished.connect(self.thread.deleteLater)
@@ -193,12 +222,19 @@ class Parser(QObject):
         self.downloadrunnable = DownloadRunnable(self.images,self.origin_url,self.method)
         self.downloadrunnable.moveToThread(self.download_thread)
         self.download_thread.started.connect(self.downloadrunnable.run)
+        self.downloadrunnable.finished.connect(self.imageDownloaded)
+        self.downloadrunnable.progressChanged.connect(self.downloadProgressChanged)
         self.downloadrunnable.finished.connect(self.download_thread.quit)
         self.downloadrunnable.finished.connect(self.download_thread.deleteLater)
         self.downloadrunnable.finished.connect(self.downloadrunnable.deleteLater)
 #        Запускаю поток
         self.download_thread.start()
 
-
+    @pyqtSlot(result = 'QVariant')
+    def get_images(self):
+        if (len(self.images) == 0):
+            return "No data"
+        else:
+            return self.images
 
 
