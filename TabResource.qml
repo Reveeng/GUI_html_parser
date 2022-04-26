@@ -15,13 +15,14 @@ Item {
 
     Connections{
         target: parser
-        function onImageDownloaded(names){
+        function onGetAllImagesUrl(names){
             var data = Object.entries(names)
+//            console.log(data)
             if (data.length === 0){
                 noData.visible = true
             }else{
                 gv.model = data
-                console.log(gv.model[0])
+                console.log("site is ",gv.model[0][1])
             }
             pw.visible = false
         }
@@ -47,7 +48,9 @@ Item {
 
     ScrollView{
         id:sc
-        clip:true
+        clip:false
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
         anchors{
             right:parent.right
             left:parent.left
@@ -58,8 +61,10 @@ Item {
         GridView{
             id:gv
             width:parent.width
-            height:parent.height
+//            height:parent.height
             flow: GridView.FlowLeftToRight
+            cellHeight: 210
+            cellWidth: 210
             onModelChanged:{
                 if (model.length == 0 )
                     noData.visible = true
@@ -72,10 +77,13 @@ Item {
                     height:200
                     border.color:"black"
                     border.width: 1
-                    color:"transparent"
+//                    color:"transparent"
                     Image{
+                        id:img
                         anchors.fill:parent
-                        source: Qt.resolvedUrl(gv.model[index])
+                        sourceSize.height: height
+                        sourceSize.width: width
+                        source: gv.model[index][1]
                     }
                 }
             }

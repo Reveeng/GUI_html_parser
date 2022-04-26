@@ -38,7 +38,7 @@ class DrawRunnable(QObject):
         self.finished.emit()
 
 class DownloadRunnable(QObject):
-    finished = pyqtSignal('QVariant')
+    finished = pyqtSignal()
     progressChanged = pyqtSignal('QVariant')
 
     def __init__(self, imgs, url, method, parent = None):
@@ -55,21 +55,23 @@ class DownloadRunnable(QObject):
     def run(self):
         img_numb = 0
         img_progr = 0
-        names = []
+#        names = []
         for link in self.images:
             img_numb += 1
             img_progr = (img_numb)/len(self.images)
             self.progressChanged.emit(img_progr)
             name = os.path.join(self.path,link.split('/')[-1])
+#            print(link)
             try:
                 with open(name, 'wb') as image:
-                    response = requests.get(self.method+"//"+self.support_url+link,stream = True)
+                    response = requests.get(link,stream = True)
                     if response.ok:
                         image.write(response.content)
-                        names.append(name)
+#                        names.append(url)
             except:
                 print("error with "+name)
-        self.finished.emit(names)
+#        print(names)
+        self.finished.emit()
 
 
 
@@ -95,10 +97,12 @@ class ParseRunnable(QObject):
             self.method = split_url[0]
 
             self.all_tags = [tag.name for tag in respContainer.soup.find_all()]
-            self.links = Utilities.get_valid_links([link.get('href') for link in  respContainer.soup.find_all('a')],self.origin_url)
+            self.links = Utilities.get_valid_links([link.get('href') for link in  respContainer.soup.find_all('a')],
+                                                    self.method,self.origin_url)
             self.edges = [[url, link] for link in self.links]
-            self.images = Utilities.get_valid_links([tag.get('src') for tag in respContainer.soup.find_all('img')], self.origin_url)
-
+            self.images = Utilities.get_valid_links([tag.get('src') for tag in respContainer.soup.find_all('img')],
+                                                    self.method,self.origin_url)
+#            print(self.links)
 #    Добавляем новые ссылки в конец массива, если ссылки нет в этом списке
     def search_for_new_links(self,new_links):
         for link in new_links:
@@ -115,16 +119,17 @@ class ParseRunnable(QObject):
         link_numb = 0
         old_link_progr = 0
         for link in self.links:
-            url = self.method+"//"+self.origin_url+link
-            respContainer = Utilities.get_response(url)
+            respContainer = Utilities.get_response(link)
             if respContainer!= None:
                 new_tags = [tag.name for tag in respContainer.soup.find_all()]
-                links = Utilities.get_valid_links([link.get('href') for link in  respContainer.soup.find_all('a')], self.origin_url)
+                links = Utilities.get_valid_links([link.get('href') for link in  respContainer.soup.find_all('a')],
+                                                   self.method,self.origin_url)
                 new_nodes = [[link, llink] for llink in links]
                 self.edges = [*self.edges, *new_nodes]
                 self.search_for_new_links(links)
                 self.all_tags = [*self.all_tags, *new_tags]
-                imgs = Utilities.get_valid_links([tag.get('src') for tag in respContainer.soup.find_all('img')],self.origin_url)
+                imgs = Utilities.get_valid_links([tag.get('src') for tag in respContainer.soup.find_all('img')],
+                                                  self.method,self.origin_url)
                 if (len(imgs) > 0):
                     self.search_for_new_imgs(imgs)
 
@@ -146,7 +151,8 @@ class Parser(QObject):
     finished = pyqtSignal()
     parseProgressChanged = pyqtSignal('QVariant')
     downloadProgressChanged = pyqtSignal('QVariant')
-    imageDownloaded = pyqtSignal('QVariant')
+    imageDownloaded = pyqtSignal()
+    getAllImagesUrl = pyqtSignal('QVariant')
 
     def __init__(self, parent = None):
         return super().__init__(parent)
@@ -169,6 +175,7 @@ class Parser(QObject):
         self.links = self.runnable.links
         self.edges = self.runnable.edges
         self.images = self.runnable.images
+        self.getAllImagesUrl.emit(self.images)
         self.download_images()
 #        Генерирую сигнал, который потом перехвачу в qml
         self.finished.emit()

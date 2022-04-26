@@ -61,14 +61,14 @@ def get_unique_array(array, num_threads = 2):
 
 #Принимает массив ссылок возвращает валидные ссылки (это ссылки которые начинатся с / либо с url сайта)
 #Ссылки на другие ресурсы отбрасываются
-def get_valid_links(links, support_url):
+def get_valid_links(links,method, support_url):
     clear_links = []
     for link in links:
         if link != None:
             if link.startswith('/') and len(link) > 1:
-                clear_links.append(link)
+                clear_links.append(method+"//"+support_url+link)
             elif link.startswith(support_url):
-                clear_links.append(link)
+                clear_links.append(method+"//"+link)
     clear_links = get_unique_array(clear_links)
     return clear_links
 
