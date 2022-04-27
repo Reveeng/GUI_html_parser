@@ -48,20 +48,21 @@ Item {
 
     ScrollView{
         id:sc
-        clip:false
+        clip:true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOn
         anchors{
             right:parent.right
             left:parent.left
             top:txt.bottom
+            bottom: parent.bottom
             margins: 5
         }
 
         GridView{
             id:gv
             width:parent.width
-//            height:parent.height
+            height:parent.height
             flow: GridView.FlowLeftToRight
             cellHeight: 210
             cellWidth: 210
