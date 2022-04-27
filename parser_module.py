@@ -232,7 +232,7 @@ class Parser(QObject):
         self.downloadrunnable.finished.connect(self.imageDownloaded)
         self.downloadrunnable.progressChanged.connect(self.downloadProgressChanged)
         self.downloadrunnable.finished.connect(self.download_thread.quit)
-        self.downloadrunnable.finished.connect(self.download_thread.deleteLater)
+#        self.downloadrunnable.finished.connect(self.download_thread.deleteLater)
         self.downloadrunnable.finished.connect(self.downloadrunnable.deleteLater)
 #        Запускаю поток
         self.download_thread.start()

@@ -24,13 +24,7 @@ Item {
                 gv.model = data
                 console.log("site is ",gv.model[0][1])
             }
-            pw.visible = false
         }
-        function onDownloadProgressChanged(progress){
-            pw.value = progress
-            pw.visible = true
-        }
-
     }
     Text{
         id:noData
@@ -39,11 +33,6 @@ Item {
         font.pixelSize: 18
         anchors.centerIn: parent
         visible: false
-    }
-    ProgressWindow{
-        id:pw
-        text:"Идет загрузка изображений. Подождите..."
-        visible:false
     }
 
     ScrollView{
