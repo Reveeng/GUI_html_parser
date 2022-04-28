@@ -95,12 +95,15 @@ def get_tags_count(tags):
         tag_dict[tag] = tags.count(tag)
     return tag_dict
 
-
+#Нужна для того, чтобы разобрать ссылки с русскими словами
 def unquote(links, edges):
     from urllib.parse import unquote as unq
     links = [unq(link) for link in links]
     edges = [[unq(edge[0]),unq(edge[1])] for edge in edges]
     return links, edges
+
+def save_as_csv(name,stat_dict):
+    np.savetxt(name+"/"+name+".csv",[p for p in zip(stat_dict.keys(), stat_dict.values())], delimiter =  ',', fmt='%s')
 
 #nodes - ноды графы, edges - массив типа [node,node] устанавливает ребро между нодами
 def draw_graph(nodes,edges):

@@ -7,10 +7,10 @@ import QtQuick.Layouts 1.12
 //Это класс окна, создает нативное для платформы окно с кнопка закрыть и свернуть
 Window {
     width: 640
-    height: 640
-    minimumHeight: 640
+    height: 655
+    minimumHeight: 655
     minimumWidth: 640
-    maximumHeight: 640
+    maximumHeight: 655
     maximumWidth: 640
     visible: true
     color: "grey"
@@ -40,7 +40,7 @@ Window {
     StackLayout {
         width: parent.width
         anchors.top:bar.bottom
-        anchors.bottom: parent.bottom
+        anchors.bottom: footer.top
         currentIndex: bar.currentIndex
         TabResults{
             id:res
@@ -51,6 +51,36 @@ Window {
             id:reso
             Layout.fillHeight: true
             Layout.fillWidth: true
+        }
+    }
+
+    Connections{
+        target: parser
+        function onStateChanged(strState){
+            txtState.text = strState
+        }
+    }
+
+    Rectangle{
+        id:footer
+        color: "white"
+        height:15
+        anchors{
+            right:parent.right
+            left: parent.left
+            bottom: parent.bottom
+
+        }
+        Text{
+            id:txtState
+            font.pixelSize: 14
+            text:"Нет выполняемых этапов"
+            color: "black"
+            anchors{
+                right:parent.right
+                rightMargin: 10
+                verticalCenter: parent.verticalCenter
+            }
         }
     }
 }

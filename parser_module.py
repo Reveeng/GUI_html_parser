@@ -153,6 +153,7 @@ class Parser(QObject):
     downloadProgressChanged = pyqtSignal('QVariant')
     imageDownloaded = pyqtSignal()
     getAllImagesUrl = pyqtSignal('QVariant')
+    stateChanged = pyqtSignal('QVariant')
 
     def __init__(self, parent = None):
         return super().__init__(parent)
@@ -166,17 +167,18 @@ class Parser(QObject):
         self.method = self.runnable.method
         return self.runnable.isValid
 
+
 #    Выполняется когда закончит выполнение поток в котором парсится сайт
     def on_parse_finished(self, all_tags):
 #        записываю словарь тегов
         self.tag_dict = Utilities.get_tags_count(all_tags)
-        print(self.tag_dict)
-
         self.links = self.runnable.links
         self.edges = self.runnable.edges
         self.images = self.runnable.images
         self.getAllImagesUrl.emit(self.images)
+        name = self.origin_url.split('.')[0]
         self.download_images()
+        Utilities.save_as_csv(name, self.tag_dict)
 #        Генерирую сигнал, который потом перехвачу в qml
         self.finished.emit()
 
@@ -188,11 +190,11 @@ class Parser(QObject):
         tags_2 = dict(list(self.tag_dict.items())[sub_len:2*sub_len-1])
         tags_3 = dict(list(self.tag_dict.items())[2*sub_len:3*sub_len-1])
         tags = [tags_1,tags_2, tags_3]
-#        split_tags = [,self.tag_dict[sub_len:2*sub_len-1],self.tag_dict[2*sub_len:3*sub_len-1]]
         return tags
 
     @pyqtSlot()
     def show_graph(self):
+        self.setState("Идет построение графа")
         self.drawrunnable = DrawRunnable(self.links, self.edges)
         self.draw_thread = QThread()
         self.drawrunnable.moveToThread(self.draw_thread)
@@ -200,12 +202,13 @@ class Parser(QObject):
         self.drawrunnable.finished.connect(self.draw_thread.quit)
         self.drawrunnable.finished.connect(self.draw_thread.deleteLater)
         self.drawrunnable.finished.connect(self.drawrunnable.deleteLater)
+        self.drawrunnable.finished.connect(lambda : self.setState("Построение графа закончено"))
         self.draw_thread.start()
-#        Utilities.draw_graph(self.links, self.edges)
 
 #    Функция вызывается из qml, чтобы запустить парсинг сайта
     @pyqtSlot()
     def get_tags_stats(self):
+        self.setState("Парсинг начат")
 #        Создаю экземпляр класса потока
         self.thread  = QThread()
 #        Переношу объект в поток (По сути никакого переноса нет, просто все методы класса будут выполняться в этом потоке)
@@ -220,11 +223,13 @@ class Parser(QObject):
         self.runnable.finished.connect(self.thread.quit)
         self.runnable.finished.connect(self.thread.deleteLater)
         self.runnable.finished.connect(self.runnable.deleteLater)
+        self.runnable.finished.connect(lambda : self.setState("Парсинг закончен"))
 #        Запускаю поток
         self.thread.start()
 
     @pyqtSlot()
     def download_images(self):
+        self.setState("Начата загрузка изображений")
         self.download_thread= QThread()
         self.downloadrunnable = DownloadRunnable(self.images,self.origin_url,self.method)
         self.downloadrunnable.moveToThread(self.download_thread)
@@ -232,16 +237,14 @@ class Parser(QObject):
         self.downloadrunnable.finished.connect(self.imageDownloaded)
         self.downloadrunnable.progressChanged.connect(self.downloadProgressChanged)
         self.downloadrunnable.finished.connect(self.download_thread.quit)
+        self.downloadrunnable.finished.connect(lambda : self.setState("Загрузка изображений закончена"))
 #        self.downloadrunnable.finished.connect(self.download_thread.deleteLater)
         self.downloadrunnable.finished.connect(self.downloadrunnable.deleteLater)
 #        Запускаю поток
         self.download_thread.start()
 
-    @pyqtSlot(result = 'QVariant')
-    def get_images(self):
-        if (len(self.images) == 0):
-            return "No data"
-        else:
-            return self.images
+    def setState(self,state):
+        if state != "":
+            self.stateChanged.emit(state)
 
 
