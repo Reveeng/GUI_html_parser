@@ -1,3 +1,3 @@
 {
-    "files": ["Utilities.py","TabResults.qml","ProgressWindow.qml","parser_module.py","main.py","main.qml","TabResource.qml","TableItem.qml"]
+    "files": ["main.py","ProgressWindow.qml","TableItem.qml","main.qml","TabResource.qml","Utilities.py","TabResults.qml","parser_module.py","test.py"]
 }

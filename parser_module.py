@@ -97,22 +97,26 @@ class ParseRunnable(QObject):
             self.method = split_url[0]
 
             self.all_tags = [tag.name for tag in respContainer.soup.find_all()]
-            self.links = Utilities.get_valid_links([link.get('href') for link in  respContainer.soup.find_all('a')],
+            self.links, out_links = Utilities.get_valid_links([link.get('href') for link in  respContainer.soup.find_all('a')],
                                                     self.method,self.origin_url)
             self.edges = [[url, link] for link in self.links]
-            self.images = Utilities.get_valid_links([tag.get('src') for tag in respContainer.soup.find_all('img')],
-                                                    self.method,self.origin_url)
-#            print(self.links)
-#    Добавляем новые ссылки в конец массива, если ссылки нет в этом списке
-    def search_for_new_links(self,new_links):
-        for link in new_links:
-            if link  not in self.links:
-                self.links.append(link)
+            out_nodes = [[url, link] for link in out_links]
+            self.edges = [*self.edges, *out_nodes]
 
-    def search_for_new_imgs(self,new_imgs):
-        for img in new_imgs:
-            if img not in self.images:
-                self.images.append(img)
+            self.images, _ = Utilities.get_valid_links([tag.get('src') for tag in respContainer.soup.find_all('img')],
+                                                    self.method,self.origin_url)
+            hide_imgs = Utilities.search_img_by_re(respContainer.response)
+            Utilities.concatenate_nd(self.images, hide_imgs)
+#    Добавляем новые ссылки в конец массива, если ссылки нет в этом списке
+#    def search_for_new_links(self,new_links):
+#        for link in new_links:
+#            if link  not in self.links:
+#                self.links.append(link)
+
+#    def search_for_new_imgs(self,new_imgs):
+#        for img in new_imgs:
+#            if img not in self.images:
+#                self.images.append(img)
 
 #    Эта функция выполняется в отдельном потоке, ищет все тэги ро всем ссылкам
     def run(self):
@@ -122,23 +126,27 @@ class ParseRunnable(QObject):
             respContainer = Utilities.get_response(link)
             if respContainer!= None:
                 new_tags = [tag.name for tag in respContainer.soup.find_all()]
-                links = Utilities.get_valid_links([link.get('href') for link in  respContainer.soup.find_all('a')],
+                links, out_links = Utilities.get_valid_links([link.get('href') for link in  respContainer.soup.find_all('a')],
                                                    self.method,self.origin_url)
                 new_nodes = [[link, llink] for llink in links]
-                self.edges = [*self.edges, *new_nodes]
-                self.search_for_new_links(links)
+                out_nodes = [[link, llink] for llink in out_links]
+                self.edges = [*self.edges, *new_nodes, *out_nodes]
+                Utilities.concatenate_nd(self.links, links)
+#                self.search_for_new_links(links)
                 self.all_tags = [*self.all_tags, *new_tags]
-                imgs = Utilities.get_valid_links([tag.get('src') for tag in respContainer.soup.find_all('img')],
+                imgs,out_img = Utilities.get_valid_links([tag.get('src') for tag in respContainer.soup.find_all('img')],
                                                   self.method,self.origin_url)
                 if (len(imgs) > 0):
-                    self.search_for_new_imgs(imgs)
-
+                    Utilities.concatenate_nd(self.images, imgs)
+                    Utilities.concatenate_nd(self.images, out_img)
+                hide_imgs = Utilities.search_img_by_re(respContainer.response)
+                Utilities.concatenate_nd(self.images, list(hide_imgs))
                 link_numb += 1
                 tmp_prgr = (link_numb)/len(self.links)
                 if (tmp_prgr > old_link_progr):
                     old_link_progr = tmp_prgr
                     self.progressChanged.emit(old_link_progr)
-
+#        hide_imgs = Utilities
         self.links, self.edges = Utilities.unquote(self.links, self.edges)
 #        вызываю сигнал, чтобы из вспомогательного потока передать данные в основной.
 

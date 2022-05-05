@@ -3,6 +3,7 @@
 from multiprocessing.dummy import Pool
 import numpy as np
 import requests
+import re
 from bs4 import BeautifulSoup
 import networkx as nx
 import matplotlib
@@ -63,14 +64,19 @@ def get_unique_array(array, num_threads = 2):
 #Ссылки на другие ресурсы отбрасываются
 def get_valid_links(links,method, support_url):
     clear_links = []
+    out_links = []
     for link in links:
         if link != None:
             if link.startswith('/') and len(link) > 1:
                 clear_links.append(method+"//"+support_url+link)
             elif link.startswith(support_url):
                 clear_links.append(method+"//"+link)
+            elif (link.startswith("http") or link.startswith("https")) and not support_url in link:
+                out_links.append(link)
     clear_links = get_unique_array(clear_links)
-    return clear_links
+    out_links = get_unique_array(out_links)
+#    print(out_links)
+    return clear_links, out_links
 
 #Отправляет запрос на сервер. Если произошла ошибка возвращает None, если все нормально, то возвращает контейнер
 def get_response(url):
@@ -104,6 +110,14 @@ def unquote(links, edges):
 
 def save_as_csv(name,stat_dict):
     np.savetxt(name+"/"+name+".csv",[p for p in zip(stat_dict.keys(), stat_dict.values())], delimiter =  ',', fmt='%s')
+
+def search_img_by_re(htmlstr):
+    return re.findall(r"http[^\"]+\.(?:jpg|png|jpeg)",htmlstr)
+
+def concatenate_nd(farray, sarray):
+    for item in sarray:
+        if item not in farray:
+            farray.append(item)
 
 #nodes - ноды графы, edges - массив типа [node,node] устанавливает ребро между нодами
 def draw_graph(nodes,edges):
