@@ -155,7 +155,7 @@ class ParseRunnable(QObject):
 
 
 
-class Parser(QObject):
+class ParserModel(QObject):
     finished = pyqtSignal()
     parseProgressChanged = pyqtSignal('QVariant')
     downloadProgressChanged = pyqtSignal('QVariant')
@@ -166,20 +166,11 @@ class Parser(QObject):
     def __init__(self, parent = None):
         return super().__init__(parent)
 
-#    pyqtSlot декоратор, который позволяет вызывать метод класса из qml файла, если объект класса есть в контексте.
-#    Если у функции нет декоратора, то она не видна в qml файле
-    @pyqtSlot(str, result = 'QVariant')
-    def parse_html(self, url):
-        self.runnable = ParseRunnable(url)
-        self.origin_url = self.runnable.origin_url
-        self.method = self.runnable.method
-        return self.runnable.isValid
-
-
 #    Выполняется когда закончит выполнение поток в котором парсится сайт
     def on_parse_finished(self, all_tags):
 #        записываю словарь тегов
         self.tag_dict = Utilities.get_tags_count(all_tags)
+        self.tag_count = len(all_tags)
         self.links = self.runnable.links
         self.edges = self.runnable.edges
         self.images = self.runnable.images
@@ -192,13 +183,17 @@ class Parser(QObject):
 
 #    Функция которую вызываю в qml для получения словаря. Tag - count
     @pyqtSlot(result = 'QVariant')
-    def get_stat(self):
+    def get_stat_results(self):
         sub_len = int(len(self.tag_dict)/3)
         tags_1 = dict(list(self.tag_dict.items())[:sub_len-1])
         tags_2 = dict(list(self.tag_dict.items())[sub_len:2*sub_len-1])
         tags_3 = dict(list(self.tag_dict.items())[2*sub_len:3*sub_len-1])
         tags = [tags_1,tags_2, tags_3]
         return tags
+
+    @pyqtSlot(result = 'QVariant')
+    def get_tags_count(self):
+        return self.tag_count
 
     @pyqtSlot()
     def show_graph(self):
@@ -213,9 +208,15 @@ class Parser(QObject):
         self.drawrunnable.finished.connect(lambda : self.setState("Построение графа закончено"))
         self.draw_thread.start()
 
-#    Функция вызывается из qml, чтобы запустить парсинг сайта
-    @pyqtSlot()
-    def get_tags_stats(self):
+
+    @pyqtSlot(str, result = 'QVariant')
+    def parse_html(self, url):
+        self.runnable = ParseRunnable(url)
+        self.origin_url = self.runnable.origin_url
+        self.method = self.runnable.method
+        if not self.runnable.isValid:
+            return false
+#    def get_tags_stats(self):
         self.setState("Парсинг начат")
 #        Создаю экземпляр класса потока
         self.thread  = QThread()
@@ -234,8 +235,8 @@ class Parser(QObject):
         self.runnable.finished.connect(lambda : self.setState("Парсинг закончен"))
 #        Запускаю поток
         self.thread.start()
+        return True
 
-    @pyqtSlot()
     def download_images(self):
         self.setState("Начата загрузка изображений")
         self.download_thread= QThread()

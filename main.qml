@@ -74,7 +74,7 @@ Window {
         Text{
             id:txtState
             font.pixelSize: 14
-            text:"Нет выполняемых этапов"
+            text:"Нет выполняемых процессов"
             color: "black"
             anchors{
                 right:parent.right

@@ -15,7 +15,7 @@ Item {
         }
         TextEdit {
             id:ed
-            property string placeholderText: "Введите сайт"
+            property string placeholderText: "Введите вдресс (URL)"
             anchors{
                 left:parent.left
                 leftMargin: 5
@@ -51,7 +51,7 @@ Item {
 //            По нажатию кнопки берет текст из textEdit и передает в класс parser url. И вызывает функцию parse
             if (textEdit.text.length != 0){
                 if (parser.parse_html(textEdit.text)){
-                    parser.get_tags_stats()
+//                    parser.get_tags_stats()
                     console.log("parsing poshel")
                     pw.visible = true
                 }
@@ -72,19 +72,55 @@ Item {
             parser.show_graph()
         }
     }
+    Rectangle{
+        id:tagCountT
+        height:15
+        width:tag.width+tgCount.width+10
+        color: "white"
+        anchors{
+            top: drawGraph.bottom
+            topMargin: 5
+            left:parent.left
+            leftMargin: 10
+        }
+        Text{
+            id:tag
+            text:"Колличество тегов:"
+            font.pixelSize: 14
+            anchors{
+                verticalCenter: parent.verticalCenter
+                left: parent.left
+//                leftMargin: 5
+            }
+        }
+        Text{
+            id:tgCount
+            text: "0"
+            font.pixelSize: 14
+            anchors{
+                verticalCenter: parent.verticalCenter
+                left:tag.right
+                leftMargin: 5
+            }
+        }
+
+    }
+
 
 //    Соединям сигнал finished от парсера с функцией которая написана.
     Connections{
         target:parser
         function onFinished() {
 //            Преобразуем JSObject полученный после вызова функцию get_stat в массив data, где один элемент это [tag, count]
-            var tags = parser.get_stat()
+            var tags = parser.get_stat_results()
 //            Задаем tableView модель data
             ftable.model = Object.entries(tags[0])
             stable.model = Object.entries(tags[1])
             ttable.model = Object.entries(tags[2])
             drawGraph.enabled = true
             pw.visible = false
+            var tag_count = parser.get_tags_count()
+            tgCount.text = tag_count
         }
         function onParseProgressChanged(progress){
             pw.value = progress
@@ -98,7 +134,7 @@ Item {
 
     Item{
         anchors{
-            top: drawGraph.bottom
+            top: tagCountT.bottom
             bottom: parent.bottom
             right: parent.right
             left: parent.left

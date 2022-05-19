@@ -6,7 +6,7 @@ import os
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
 #Импорт класса парсера
-from parser_module import Parser
+from parser_module import ParserModel
 import Utilities
 
 if __name__ == "__main__":
@@ -15,7 +15,7 @@ if __name__ == "__main__":
 #    Создается объект движка который будет разбирать qml файлы и отрисовывать по ним приложение
     engine = QQmlApplicationEngine()
 #    Создается класс парсера
-    parser = Parser()
+    parser = ParserModel()
 #    передаю объект парсера в контекст движка, чтобы в qml файлах мог обращаться к функциям этого объекта
     engine.rootContext().setContextProperty("parser", parser)
 #    загружаю основной файл с qml разметкой в движок
